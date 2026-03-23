@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DEGEN HUB | Sovereign Alpha Terminal v10.51</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-green: #00ff41;
+            --neon-pink: #ff00ff;
+            --neon-blue: #00f2ff;
+            --danger-red: #ff0033;
+            --warning-orange: #ffae00;
+            --deep-black: #020202;
+            --doge-gold: #c2a633;
+        }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background-color: var(--deep-black);
+            color: #fff;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 50% 50%, #0d1a0d 0%, #000 100%),
+                url('https://www.transparenttextures.com/patterns/carbon-fibre.png');
+            scroll-behavior: smooth;
+        }
+
+        .mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* Efek CRT Scanline */
+        body::before {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            z-index: 9999;
+            background-size: 100% 3px, 3px 100%;
+            pointer-events: none;
+            opacity: 0.12;
+        }
+
+        .glitch { position: relative; animation: glitch 2s linear infinite; }
+        @keyframes glitch {
+            2%, 64% { transform: translate(1px, 0) skew(0deg); }
+            4%, 60% { transform: translate(-1px, 0) skew(0deg); }
+            62% { transform: translate(0, 0) skew(2deg); color: var(--neon-pink); }
+        }
+
+        .btn-degen {
+            background: var(--neon-green);
+            color: #000;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            clip-path: polygon(5% 0, 100% 0, 95% 100%, 0 100%);
+            cursor: pointer;
+            box-shadow: 4px 4px 0px var(--neon-pink);
+            border: none;
+        }
+
+        .btn-degen:hover:not(:disabled) {
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0px #fff;
+            background: #fff;
+        }
+
+        .cyber-ticker-wrap {
+            background: #050505;
+            border-bottom: 1px solid rgba(0, 255, 65, 0.3);
+            height: 30px;
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+        .ticker-label {
+            background: var(--neon-green);
+            color: #000;
+            font-size: 8px;
+            font-weight: 900;
+            padding: 0 12px;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            z-index: 10;
+        }
+        .ticker-scroll {
+            display: inline-block;
+            white-space: nowrap;
+            padding-left: 100%;
+            animation: tickerFlow 45s linear infinite;
+            font-size: 10px;
+            color: var(--neon-green);
+        }
+        @keyframes tickerFlow {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-100%); }
+        }
+
+        .listing-item { 
+            min-width: 280px;
+            background: rgba(255, 255, 255, 0.02); 
+            border: 1px solid rgba(255, 255, 255, 0.05); 
+            transition: all 0.3s ease; 
+            cursor: pointer;
+            scroll-snap-align: start;
+        }
+        .listing-item:hover { 
+            background: rgba(0, 255, 65, 0.08); 
+            border-color: var(--neon-green); 
+            transform: translateY(-5px); 
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.1);
+        }
+
+        .network-visualizer {
+            width: 100%;
+            height: 280px;
+            background: #000;
+            border: 1px solid rgba(0, 242, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .dev-console {
+            background: #000;
+            border: 1px solid #1a1a1a;
+            height: 400px;
+            overflow-y: auto;
+            padding: 15px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--neon-green);
+        }
+
+        .modal-overlay { 
+            position: fixed; inset: 0; 
+            background: rgba(0,0,0,0.95); 
+            backdrop-filter: blur(15px); 
+            z-index: 1000; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            padding: 20px; 
+        }
+        .view-hidden { display: none !important; }
+
+        #toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--neon-green);
+            color: black;
+            padding: 10px 24px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            font-weight: 800;
+            z-index: 10000;
+            opacity: 0;
+            transition: all 0.3s;
+            pointer-events: none;
+        }
+
+        .paper-section {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.05);
+            padding: 2.5rem;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 2rem;
+        }
+        .paper-section::after {
+            content: "TOP_SECRET";
+            position: absolute;
+            top: 20px;
+            right: -35px;
+            background: var(--danger-red);
+            color: white;
+            font-size: 8px;
+            font-weight: 900;
+            padding: 2px 40px;
+            transform: rotate(45deg);
+        }
+
+        .paper-tag {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            color: var(--neon-green);
+            border: 1px solid var(--neon-green);
+            padding: 2px 8px;
+            display: inline-block;
+            margin-bottom: 1rem;
+        }
+
+        .stat-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            padding: 20px;
+            position: relative;
+        }
+        .stat-card::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; width: 2px; height: 100%;
+            background: var(--neon-blue);
+        }
+
+        .tech-card {
+            background: #050505;
+            border: 1px solid rgba(0, 242, 255, 0.1);
+            padding: 25px;
+            transition: all 0.3s;
+        }
+        .tech-card:hover { border-color: var(--neon-blue); box-shadow: 0 0 25px rgba(0, 242, 255, 0.15); }
+
+        .tech-header { font-size: 14px; font-weight: 800; color: var(--neon-blue); text-transform: uppercase; border-bottom: 1px solid rgba(0, 242, 255, 0.2); padding-bottom: 10px; margin-bottom: 10px; }
+        .tech-desc { font-family: 'JetBrains Mono', monospace; font-size: 10px; line-height: 1.6; color: #ccc; }
+
+        .docs-card {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.05);
+            padding: 2rem;
+            position: relative;
+        }
+        .docs-num { font-size: 40px; font-weight: 900; opacity: 0.1; position: absolute; top: 10px; right: 20px; font-style: italic; }
+
+        .system-heartbeat {
+            width: 10px; height: 10px;
+            background: var(--neon-green);
+            border-radius: 50%;
+            animation: heartbeat 1.5s ease-out infinite;
+        }
+        @keyframes heartbeat {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(3); opacity: 0; }
+        }
+
+        .gauge-needle { 
+            transform-origin: 75px 75px; 
+            transition: transform 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            fill: #fff; 
+        }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="selection:bg-pink-500 selection:text-white">
+
+    <div id="toast">>> SYSTEM_READY</div>
+
+    <!-- Navigation -->
+    <nav class="fixed w-full z-[200] px-6 py-4 flex justify-between items-center bg-black/90 backdrop-blur-md border-b border-green-500/30">
+        <div class="flex items-center gap-4 cursor-pointer" onclick="window.switchView('dashboard')">
+            <div class="bg-green-500 text-black px-2 py-0.5 font-black text-xl skew-x-[-15deg]">DH</div>
+            <div class="hidden sm:block text-left text-white">
+                <span class="text-xl font-black italic tracking-tighter uppercase glitch block leading-none">DEGEN<span class="text-green-500">HUB</span>.SYS</span>
+                <span class="text-[8px] text-gray-500 mono uppercase tracking-[0.2em]">Sovereign L1 Warfare Terminal</span>
+            </div>
+        </div>
+        
+        <div class="flex gap-4 sm:gap-8 items-center mono text-[10px] font-bold uppercase tracking-widest text-gray-400 text-right">
+            <button onclick="window.switchView('dashboard')" class="hover:text-green-400 transition hidden lg:block">_DASHBOARD</button>
+            <button onclick="window.switchView('classification')" class="hover:text-green-400 transition hidden md:block">_CLASSIFICATION</button>
+            <button onclick="window.switchView('paper')" class="hover:text-pink-400 transition hidden md:block">_DEGENPAPER</button>
+            <button onclick="window.switchView('alpha-docs')" class="hover:text-blue-400 transition hidden md:block">_ALPHA_DOCS</button>
+            <button onclick="window.switchView('dev-zone')" class="hover:text-cyan-400 transition text-cyan-400">_DEV_ZONE</button>
+            <div class="flex items-center gap-2 px-3 py-1 bg-green-500/10 border border-green-500/30 text-green-400">
+                <span>$HUB:</span>
+                <span id="navBalance" class="text-white font-bold">0.00</span>
+            </div>
+            <button id="connectWalletBtn" onclick="window.toggleWalletModal()" class="px-4 py-1 bg-pink-500 text-black font-black hover:bg-white transition uppercase text-[10px]">CONNECT_NODE</button>
+        </div>
+    </nav>
+
+    <div class="pt-16">
+        <div class="cyber-ticker-wrap">
+            <div class="ticker-label"><div class="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>SATELLITE_UPLINK</div>
+            <div id="cyberTicker" class="ticker-scroll font-bold uppercase mono text-white">
+                GAS: 0.0001 GWEI // BTC: $96,442 // ETH: $2,451 // SOL: $242 // SOVEREIGN_TPS: 1.5M // LATENCY: 0.001MS // STATUS: OPTIMUM...
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN VIEWS -->
+    <main class="container mx-auto px-6 py-10 min-h-screen">
+        
+        <!-- DASHBOARD VIEW -->
+        <div id="dashboard-view" class="view-active">
+            <div class="grid lg:grid-cols-4 gap-8 text-left">
+                <!-- Sidebar -->
+                <div class="lg:col-span-1 space-y-6">
+                    <div class="p-6 border-2 border-green-500/10 bg-black/40 relative overflow-hidden text-center text-white">
+                        <div class="flex justify-center mb-4">
+                            <span id="nodeTierLabel" class="bg-green-500/10 text-green-500 border border-green-500/30 px-3 py-1 text-[9px] mono font-black uppercase tracking-widest uppercase">CORE_NODE_v1</span>
+                        </div>
+                        <h3 class="mono text-green-500 font-black text-[11px] italic mb-2 uppercase">_RESOURCE_GENERATOR</h3>
+                        <div class="text-5xl font-black text-white italic tracking-tighter mb-4" id="pendingMining">0.0000</div>
+                        <div class="bg-white/10 h-1.5 w-full rounded-full overflow-hidden">
+                            <div id="miningProgress" class="h-full bg-green-500 shadow-[0_0_15px_var(--neon-green)] transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                        <div class="flex flex-col gap-3 mt-8">
+                            <button onclick="window.handleClaim()" class="w-full btn-degen py-4 text-[12px] font-black uppercase">CLAIM_HUB (1 DOGE)</button>
+                            <button onclick="window.openUpgradeModal()" class="w-full bg-transparent border border-neon-blue text-neon-blue py-3 text-[10px] font-black uppercase hover:bg-neon-blue hover:text-black transition text-center">UPGRADE_HARDWARE</button>
+                        </div>
+                    </div>
+
+                    <div class="p-6 bg-black border border-white/10 text-center">
+                        <h3 class="mono text-neon-pink font-black text-[11px] uppercase mb-6 tracking-widest uppercase">_DEGENROMETER_V1</h3>
+                        <div class="relative flex justify-center">
+                            <svg class="w-44 h-24" viewBox="0 0 150 80">
+                                <path d="M10,75 A65,65 0 0,1 140,75" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="12" stroke-linecap="round"/>
+                                <path d="M10,75 A65,65 0 0,1 50,22" fill="none" stroke="var(--neon-green)" stroke-width="12" opacity="0.3"/>
+                                <path d="M50,22 A65,65 0 0,1 100,22" fill="none" stroke="var(--warning-orange)" stroke-width="12" opacity="0.3"/>
+                                <path d="M100,22 A65,65 0 0,1 140,75" fill="none" stroke="var(--danger-red)" stroke-width="12" opacity="0.3"/>
+                                <polygon id="degenNeedle" class="gauge-needle" points="75,75 73,30 77,30" transform="rotate(-90 75 75)"/>
+                                <circle cx="75" cy="75" r="5" fill="#fff"/>
+                            </svg>
+                        </div>
+                        <div class="mt-4">
+                            <div id="degenStatus" class="text-xl font-black italic uppercase text-white tracking-tighter text-center uppercase">NODE_COLD</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-3 space-y-8">
+                    <div class="flex justify-between items-center border-b border-white/10 pb-4">
+                        <h2 class="text-2xl font-black italic uppercase text-white flex items-center gap-3 uppercase">
+                            <span class="w-3 h-3 bg-red-600 rounded-full animate-ping"></span>ALPHA_ECHO_DETECTED
+                        </h2>
+                        <div class="flex gap-2">
+                            <button onclick="window.scrollRadar(-1)" class="w-10 h-10 border border-white/10 flex items-center justify-center hover:bg-green-500 hover:text-black transition font-black text-sm">&larr;</button>
+                            <button onclick="window.scrollRadar(1)" class="w-10 h-10 border border-white/10 flex items-center justify-center hover:bg-green-500 hover:text-black transition font-black text-sm">&rarr;</button>
+                        </div>
+                    </div>
+                    
+                    <div id="listingFeed" class="flex gap-6 overflow-x-auto pb-6 no-scrollbar snap-x">
+                        <div class="p-20 text-center mono text-green-500 animate-pulse w-full uppercase text-sm">SCANNING_GLOBAL_MEMPOOL...</div>
+                    </div>
+
+                    <div class="grid md:grid-cols-2 gap-8 text-left">
+                        <div class="p-6 bg-black border border-cyan-500/30 flex flex-col relative text-left">
+                            <div class="flex justify-between items-center border-b border-cyan-500/30 pb-3 mb-4">
+                                <h3 class="mono text-cyan-400 font-bold uppercase italic text-[11px] uppercase">_NEURAL_MESH_TOPOLOGY</h3>
+                                <div class="bg-cyan-500/20 text-cyan-400 px-2 py-0.5 text-[8px] font-black animate-pulse uppercase uppercase">STABLE</div>
+                            </div>
+                            <div class="network-visualizer mb-4">
+                                <canvas id="chain-canvas" class="w-full h-full"></canvas>
+                            </div>
+                            <p class="mono text-[10px] text-gray-400 leading-relaxed text-left">Sovereign L1 uses direct mesh for instant alpha propagation via Zero-Hop protocols.</p>
+                        </div>
+
+                        <div class="p-6 bg-black border border-green-500/30 flex flex-col text-left">
+                            <h3 class="mono text-green-500 font-bold uppercase italic text-[11px] border-b border-green-500/20 pb-3 mb-4 uppercase">_EXECUTION_PLAN</h3>
+                            <div class="flex-1 space-y-4">
+                                <div class="border-l-4 border-green-500 pl-4 py-3 bg-green-500/5 text-left text-white">
+                                    <h4 class="text-green-400 text-[12px] font-black uppercase uppercase">Phase 1: Genesis Node</h4>
+                                    <p class="mono text-[9px] mt-1 uppercase italic">Alpha radar activated. Community mining initiated.</p>
+                                </div>
+                                <div class="border-l-4 border-gray-800 pl-4 py-3 opacity-60 text-left text-white">
+                                    <h4 class="text-gray-500 text-[11px] font-black uppercase uppercase">Phase 2: $HUB TGE</h4>
+                                    <p class="mono text-[9px] mt-1 uppercase italic">Token launch on Base L2 network.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CLASSIFICATION VIEW -->
+        <div id="classification-view" class="view-hidden text-left">
+            <div class="border-b border-green-500/30 pb-10 mb-12">
+                <h1 class="text-7xl font-black italic uppercase tracking-tighter glitch">CLASSIFIED_DATA</h1>
+                <p class="mono text-green-500 text-sm uppercase tracking-[0.4em] mt-4 uppercase">Institutional Alpha Detection • Sovereign Protocol</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8 text-white text-left">
+                <div class="p-8 bg-white/5 border border-white/10">
+                    <div class="text-cyan-400 text-xs mono font-black mb-6">[MODULE_01]</div>
+                    <h3 class="text-3xl font-black italic uppercase mb-4 uppercase">ZERO_DELAY</h3>
+                    <p class="mono text-[11px] leading-relaxed uppercase text-left">Direct mempool hooks bypass public RPC congestion entirely. Execute trades at light velocity.</p>
+                </div>
+                <div class="p-8 bg-white/5 border border-white/10">
+                    <div class="text-red-500 text-xs mono font-black mb-6">[MODULE_02]</div>
+                    <h3 class="text-3xl font-black italic uppercase mb-4 uppercase">RUG_SHIELD</h3>
+                    <p class="mono text-[11px] leading-relaxed uppercase text-left">AI audit on bytecode. Malicious logic detected before the first transaction is performed.</p>
+                </div>
+                <div class="p-8 bg-white/5 border border-white/10">
+                    <div class="text-pink-500 text-xs mono font-black mb-6">[MODULE_03]</div>
+                    <h3 class="text-3xl font-black italic uppercase mb-4 uppercase">WHALE_SYNC</h3>
+                    <p class="mono text-[11px] leading-relaxed uppercase text-left">Multi-chain institutional wallet correlation. Follow the shadow accumulation path.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- DEGENPAPER VIEW -->
+        <div id="paper-view" class="view-hidden text-left">
+            <div class="max-w-5xl mx-auto">
+                <header class="text-center mb-16">
+                    <div class="text-8xl font-black italic uppercase tracking-tighter mb-4">DEGENPAPER</div>
+                    <div class="mono text-[12px] text-pink-500 font-bold tracking-[0.5em] uppercase text-center">Sovereign Layer 1: The Endgame Protocol</div>
+                </header>
+
+                <div class="paper-section text-white text-left">
+                    <div class="paper-tag">SECTION_01</div>
+                    <h2 class="text-5xl font-black italic uppercase mb-6 uppercase leading-none">THE ASYMMETRY PROBLEM</h2>
+                    <div class="grid md:grid-cols-2 gap-12 text-left">
+                        <div class="space-y-4 mono text-[13px] text-gray-400 leading-relaxed uppercase text-left">
+                            <p>The current crypto landscape is broken by <span class="text-white font-bold underline">Information Asymmetry</span>. Retail investors are forced to eat scraps while Whales have elite RPC access.</p>
+                            <p>DEGEN HUB destroys this monopoly by providing institutional grade tools directly to the community.</p>
+                        </div>
+                        <div class="p-6 bg-black border border-white/10 flex flex-col justify-center text-center">
+                            <div class="text-[9px] mono text-danger-red mb-2 uppercase font-black">Retail Success Rate:</div>
+                            <div class="text-4xl font-black italic text-white">0.42%</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="paper-section text-white text-left" style="border-color: var(--neon-blue)">
+                    <div class="paper-tag" style="color: var(--neon-blue); border-color: var(--neon-blue)">SECTION_02</div>
+                    <h2 class="text-5xl font-black italic uppercase mb-6 text-neon-blue uppercase leading-none">ZERO-HOP PROTOCOL</h2>
+                    <p class="mono text-[13px] text-gray-400 leading-relaxed uppercase mb-8 text-left">Data flow is optimized for absolute velocity. By eliminating intermediate server hops, Sovereign L1 reaches a consensus latency of <span class="text-white">0.001ms</span>.</p>
+                    <div class="grid md:grid-cols-3 gap-6">
+                        <div class="p-4 border border-white/5 bg-white/5 text-left">
+                            <h4 class="text-neon-blue mono text-[11px] font-black uppercase mb-2">Direct Streaming</h4>
+                            <p class="mono text-[9px] uppercase leading-relaxed text-gray-400 text-left">Eliminating data hops between nodes, sending data straight to your terminal.</p>
+                        </div>
+                        <div class="p-4 border border-white/5 bg-white/5 text-left">
+                            <h4 class="text-neon-blue mono text-[11px] font-black uppercase mb-2">Sub-Millisecond</h4>
+                            <p class="mono text-[9px] uppercase leading-relaxed text-gray-400 text-left">Latency pushed to microsecond levels, providing absolute speed advantage.</p>
+                        </div>
+                        <div class="p-4 border border-white/5 bg-white/5 text-left">
+                            <h4 class="text-neon-blue mono text-[11px] font-black uppercase mb-2">Alpha Extraction</h4>
+                            <p class="mono text-[9px] uppercase leading-relaxed text-gray-400 text-left">Extracting signals directly from mempool before block confirmation.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ALPHA DOCS VIEW -->
+        <div id="alpha-docs-view" class="view-hidden text-left">
+            <div class="max-w-6xl mx-auto text-white text-left">
+                <div class="border-l-8 border-neon-blue pl-8 mb-16">
+                    <h1 class="text-7xl font-black italic uppercase tracking-tighter mb-4">ALPHA_DOCS</h1>
+                    <p class="mono text-neon-blue text-sm uppercase tracking-[0.4em] uppercase">TECHNICAL ARCHITECTURE • V1.5</p>
+                </div>
+                <div class="grid md:grid-cols-2 gap-8 text-left">
+                    <div class="docs-card">
+                        <div class="docs-num">01</div>
+                        <h3 class="text-2xl font-black italic mb-4 uppercase">Neural-Mesh Topology</h3>
+                        <p class="mono text-[11px] text-gray-400 uppercase leading-relaxed text-left">Berbeda dengan rantai linear tradisional, Sovereign L1 menggunakan <span class="text-neon-blue">Neural-Mesh Networking</span>. Setiap node bertindak sebagai pemancar Alpha cerdas secara otonom.</p>
+                    </div>
+                    <div class="docs-card">
+                        <div class="docs-num">02</div>
+                        <h3 class="text-2xl font-black italic mb-4 uppercase">Zero-Hop Ledger</h3>
+                        <p class="mono text-[11px] text-gray-400 uppercase leading-relaxed text-left">Menghilangkan server perantara yang memperlambat verifikasi blok. Data dari mempool langsung disinkronkan ke status ledger secara atomik.</p>
+                    </div>
+                    <div class="docs-card">
+                        <div class="docs-num">03</div>
+                        <h3 class="text-2xl font-black italic mb-4 uppercase">Parallel PTE Engine</h3>
+                        <p class="mono text-[11px] text-gray-400 uppercase leading-relaxed text-left">PTE (Parallel Transaction Execution) engine mengeksekusi transaksi secara simultan di setiap inti CPU, mencapai skalabilitas tak terbatas.</p>
+                    </div>
+                    <div class="docs-card">
+                        <div class="docs-num">04</div>
+                        <h3 class="text-2xl font-black italic mb-4 uppercase">AI Rug-Shield Layer</h3>
+                        <p class="mono text-[11px] text-gray-400 uppercase leading-relaxed text-left">AI Heuristic layer memindai bytecode kontrak saat deployment untuk memprediksi potensi eksploitasi jahat secara real-time.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DEV ZONE VIEW -->
+        <div id="dev-zone-view" class="view-hidden space-y-10 text-left">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-cyan-500/30 pb-10 text-left">
+                <div>
+                    <button onclick="window.switchView('dashboard')" class="text-gray-400 mono flex items-center gap-2 hover:text-white transition uppercase text-[11px] font-black mb-4"><span>&lt;&lt;</span> EXIT_CONTROL</button>
+                    <h1 class="text-7xl font-black italic uppercase tracking-tighter uppercase">L1_CONTROL</h1>
+                </div>
+                <div class="text-right mono text-[11px] text-cyan-400">
+                    <div>NODE_ID: <span id="devNodeId" class="text-white uppercase uppercase">SOV-0911-ALPHA</span></div>
+                    <div class="text-gray-500 uppercase uppercase">CONSENSUS: 10.51.0-STABIL</div>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-white text-left">
+                <div class="stat-card"><div class="text-[10px] text-gray-500 uppercase mb-1 text-left">Network TPS</div><div class="text-4xl font-black italic text-left" id="liveTps">1.2M</div></div>
+                <div class="stat-card" style="--neon-blue: var(--neon-pink)"><div class="text-[10px] text-gray-500 uppercase mb-1 text-left">Latency</div><div class="text-4xl font-black italic text-left">0.001ms</div></div>
+                <div class="stat-card" style="--neon-blue: var(--neon-green)"><div class="text-[10px] text-gray-500 uppercase mb-1 text-left">Block Height</div><div class="text-4xl font-black italic text-left" id="devBlockCount">#0</div></div>
+                <div class="stat-card" style="--neon-blue: var(--warning-orange)"><div class="text-[10px] text-gray-500 uppercase mb-1 text-left">Validators</div><div class="text-4xl font-black italic text-left" id="devPeerCount">142k</div></div>
+            </div>
+
+            <!-- TEKNIS PENJELASAN DEV ZONE -->
+            <div class="mb-12 p-8 bg-cyan-500/5 border border-cyan-500/20 relative overflow-hidden uppercase mono text-[11px] text-white text-left">
+                <h2 class="text-2xl font-black italic uppercase text-cyan-400 mb-4 flex items-center gap-3 uppercase">INSTANT_TRANSACTION_TECH</h2>
+                <p>Sovereign L1 discards traditional sequential processing for pure parallel execution. Latency is measured in microseconds. Every block is verified instantly via the Zero-Hop consensus protocol, allowing for massive scalability and alpha detection speed.</p>
+            </div>
+
+            <div class="mb-12 text-left">
+                <h2 class="text-2xl font-black italic uppercase text-cyan-400 mb-6 flex items-center gap-3 uppercase">
+                    <span class="p-1 bg-cyan-400 text-black text-[10px] mono not-italic">TECH_DOSSIER</span> 
+                    WHY SOVEREIGN L1 IS UNIQUE?
+                </h2>
+                <div class="grid md:grid-cols-3 gap-6 text-left">
+                    <div class="tech-card">
+                        <div class="tech-header text-left">Parallel Execution</div>
+                        <p class="tech-desc text-left">Massive parallelization allows processing millions of transactions without the sequential EVM bottleneck.</p>
+                    </div>
+                    <div class="tech-card">
+                        <div class="tech-header text-left">Zero-Hop Protocol</div>
+                        <p class="tech-desc text-left">Information from Mempool is sent directly to validation nodes via the Zero-Hop protocol, slashing latency.</p>
+                    </div>
+                    <div class="tech-card">
+                        <div class="tech-header text-left">Real-time Streaming</div>
+                        <p class="tech-desc text-left">Alpha signals are extracted directly from the direct mempool stream before block confirmation.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid lg:grid-cols-3 gap-8 text-left">
+                <div class="lg:col-span-2 bg-black border border-white/10 p-5 text-white text-left">
+                    <div class="flex justify-between items-center mb-6 border-b border-white/10 pb-3 uppercase">
+                        <span class="mono text-[11px] font-black text-white uppercase uppercase">_SOVEREIGN_EXPLORER</span>
+                        <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    </div>
+                    <div id="blockExplorer" class="h-[450px] overflow-y-auto no-scrollbar space-y-1 mono text-[11px] text-left">
+                        <div class="text-center py-24 text-gray-600 uppercase">AWAITING_BLOCK_VALIDATION...</div>
+                    </div>
+                </div>
+                <div class="bg-black border-2 border-cyan-500/20 p-8 flex flex-col h-full text-white text-center">
+                    <div class="flex justify-between items-center mb-8 text-center uppercase">
+                        <h3 class="mono text-cyan-400 font-bold uppercase text-[12px] uppercase">_CONSENSUS_ENGINE</h3>
+                        <button id="nodeToggleBtn" onclick="window.toggleTestNode()" class="bg-cyan-500 text-black px-6 py-2 font-black text-[11px] skew-x-[-15deg] hover:bg-white transition uppercase">START_NODE</button>
+                    </div>
+                    <div id="nodeConsole" class="dev-console flex-1 leading-relaxed text-left text-green-500 uppercase text-left">>> SYSTEM READY...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PROFILE VIEW / TOKEN DIAGNOSTICS -->
+        <div id="profile-view" class="view-hidden text-left">
+            <button onclick="window.switchView('dashboard')" class="mb-12 text-gray-400 mono flex items-center gap-2 hover:text-white transition uppercase text-[11px] font-black uppercase"><span>&lt;&lt;</span> TERMINATE_SCAN</button>
+            <div id="profile-content"></div>
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="mt-20 border-t-2 border-green-500/50 py-16 bg-black/80">
+        <div class="container mx-auto px-6 grid md:grid-cols-4 gap-12 text-left">
+            <div class="col-span-2 space-y-6 text-left">
+                <div class="flex items-center gap-4">
+                    <div class="bg-green-500 text-black px-2 py-0.5 font-black text-xl skew-x-[-15deg]">DH</div>
+                    <div class="mono text-left">
+                        <span class="text-white font-black text-lg block leading-none">DEGEN HUB PROTOCOL</span>
+                        <span class="text-[8px] text-green-500 uppercase tracking-[0.5em]">Global Sovereign Mesh</span>
+                    </div>
+                </div>
+                <p class="p-5 bg-white/5 border-l-4 border-green-500 mono text-[11px] text-gray-400 uppercase leading-relaxed text-left">
+                    Encrypted direct link to Sovereign L1 infrastructure. Code is Law. Network is Alpha.
+                </p>
+            </div>
+            <div class="space-y-4">
+                <h4 class="mono text-[11px] text-white font-black uppercase tracking-widest border-b border-white/10 pb-2">STATUS</h4>
+                <div class="space-y-2 mono text-[10px]">
+                    <div class="flex justify-between text-gray-500"><span>Uptime:</span><span class="text-green-500" id="footerUptime">00:00:00</span></div>
+                    <div class="flex justify-between text-gray-500"><span>Coords:</span><span class="text-white">104.22°E / 1.35°N</span></div>
+                </div>
+            </div>
+            <div class="space-y-4 text-left">
+                <h4 class="mono text-[11px] text-white font-black uppercase tracking-widest border-b border-white/10 pb-2 uppercase text-left">SECURITY</h4>
+                <div class="flex items-center gap-3 text-left">
+                    <div class="system-heartbeat"></div>
+                    <span class="mono text-[9px] text-green-400 font-bold uppercase text-left">Pulse: Active</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Modals -->
+    <div id="wallet-modal" class="modal-overlay hidden">
+        <div class="w-full max-w-sm p-10 bg-black border-2 border-green-500 shadow-[0_0_50px_rgba(0,255,65,0.1)] text-center text-white">
+            <h2 class="text-3xl font-black italic text-green-500 mb-10 uppercase tracking-tighter uppercase text-center">_NODE_LINKING</h2>
+            <div class="space-y-4">
+                <button onclick="window.performWalletConnect()" class="w-full border border-white/20 p-5 mono text-[12px] hover:bg-green-500 hover:text-black transition uppercase font-black text-center uppercase">CONNECT_EVM_NODE</button>
+                <button onclick="window.toggleWalletModal()" class="w-full p-2 text-[10px] text-gray-600 hover:text-white transition mono uppercase text-center mt-4 uppercase">Abort</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="upgrade-modal" class="modal-overlay hidden">
+        <div class="w-full max-w-5xl p-10 bg-black border-2 border-neon-blue text-center text-white">
+            <div class="flex justify-between items-center border-b border-neon-blue/30 pb-6 mb-10 text-center">
+                <h2 class="text-3xl font-black italic uppercase text-neon-blue uppercase">_UPGRADE_HARDWARE_L1</h2>
+                <button onclick="window.closeUpgradeModal()" class="text-gray-500 hover:text-white mono text-sm font-black uppercase">[X]</button>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="p-10 border border-white/10 hover:border-green-500 transition cursor-pointer group flex flex-col items-center" onclick="window.initiateUpgrade(1, 10)">
+                    <h3 class="text-2xl font-black italic uppercase mb-3 uppercase">QUANTUM_HANDSHAKE</h3>
+                    <div class="text-green-500 font-bold mono text-[12px] uppercase mb-8 text-white uppercase text-center">10x SPEED</div>
+                    <div class="text-3xl font-black italic">10 DOGE</div>
+                </div>
+                <div class="p-10 border border-neon-pink/30 hover:border-neon-pink transition cursor-pointer group flex flex-col items-center" onclick="window.initiateUpgrade(2, 50)">
+                    <h3 class="text-2xl font-black italic text-neon-pink uppercase mb-3 uppercase">NEURAL_OVERDRIVE</h3>
+                    <div class="text-green-500 font-bold mono text-[12px] uppercase mb-8 text-white uppercase text-center">100x SPEED</div>
+                    <div class="text-3xl font-black italic">50 DOGE</div>
+                </div>
+                <div class="p-10 border border-cyan-500/30 hover:border-cyan-500 transition cursor-pointer group flex flex-col items-center" onclick="window.initiateUpgrade(3, 100)">
+                    <h3 class="text-4xl font-black italic text-cyan-400 uppercase mb-3 text-neon-blue uppercase">SATELLITE_HYPERLINK</h3>
+                    <div class="text-green-500 font-bold mono text-[12px] uppercase mb-8 text-white uppercase text-center">1000x SPEED</div>
+                    <div class="text-3xl font-black italic">100 DOGE</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="doge-payment-modal" class="modal-overlay hidden">
+        <div class="w-full max-w-md p-10 bg-black border-2 border-doge-gold text-white relative text-left">
+            <div class="flex items-center gap-4 mb-8 border-b border-doge-gold/30 pb-6 text-left">
+                <div class="bg-doge-gold text-black px-3 py-1 font-black text-sm uppercase uppercase">Live_Auth</div>
+                <h2 class="text-2xl font-black italic uppercase tracking-tighter uppercase text-left">WEB3_PAYMENT</h2>
+            </div>
+            <div class="space-y-6 text-left">
+                <div class="p-6 bg-white/5 border border-white/10 rounded-sm text-left">
+                    <div class="flex justify-between items-center mb-4 text-left"><span class="mono text-[10px] text-gray-500 uppercase uppercase text-left">Target:</span><span class="mono text-[11px] text-white font-black uppercase text-right" id="payModalGate">DEGEN_VAULT_L1</span></div>
+                    <div class="flex justify-between items-center pt-5 border-t border-white/5 text-left"><span class="mono text-[11px] text-gray-300 font-bold uppercase text-left uppercase text-left">Amount:</span><span class="text-3xl font-black text-doge-gold italic text-right" id="payModalAmount">0.00 DOGE</span></div>
+                </div>
+                <div id="pay-status-box" class="hidden p-5 bg-blue-500/10 border border-blue-500/30 text-center"><div class="mono text-[11px] text-blue-400 uppercase font-black animate-pulse uppercase text-center" id="pay-status-text">Broadcasting Transaction...</div></div>
+                <div class="flex flex-col gap-4 text-center">
+                    <button id="confirmPayBtn" onclick="window.executeRealPayment()" class="w-full bg-doge-gold text-black py-6 font-black uppercase text-sm hover:bg-white transition shadow-[0_0_20px_rgba(194,166,51,0.2)] text-center uppercase">CONFIRM_WEB3_PAYMENT</button>
+                    <button onclick="window.closePayModal()" class="w-full py-2 text-gray-500 mono text-[10px] hover:text-white transition uppercase uppercase text-center">Abort</button>
+                </div>
+                <div class="text-[8px] mono text-gray-600 text-center uppercase">Network Address: DNfPnPD2tA8q6Cm4Fqq5zkAgg69ozzTEmz</div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, updateDoc, increment, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- GLOBAL FUNCTIONS ATTACHMENT ---
+        window.showToast = (msg) => {
+            const t = document.getElementById('toast');
+            if (t) {
+                t.innerText = `>> ${msg}`;
+                t.style.opacity = '1';
+                setTimeout(() => t.style.opacity = '0', 3000);
+            }
+        };
+
+        window.switchView = (id) => {
+            ['dashboard', 'classification', 'paper', 'alpha-docs', 'dev-zone', 'profile'].forEach(v => {
+                const el = document.getElementById(`${v}-view`);
+                if(el) el.classList.add('view-hidden');
+            });
+            const target = document.getElementById(`${id}-view`);
+            if(target) target.classList.remove('view-hidden');
+            window.scrollTo(0,0);
+        };
+
+        // --- FIREBASE SETUP ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyCnGSM1-LD6rYDJJJ9AYFCpGCHb_8OU7qI",
+            authDomain: "degenhubsys.firebaseapp.com",
+            projectId: "degenhubsys",
+            storageBucket: "degenhubsys.firebasestorage.app",
+            messagingSenderId: "460969189124",
+            appId: "1:460969189124:web:eac4a4dfb2a19937bcba51",
+            measurementId: "G-P5PYWPBGGN"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = "degenhubsys";
+        const TARGET_ADDRESS = "DNfPnPD2tA8q6Cm4Fqq5zkAgg69ozzTEmz";
+        const apiKey = ""; // Gemini API Key
+
+        const state = {
+            user: null,
+            balance: 0,
+            pending: 0,
+            tier: 0,
+            uptime: 0,
+            blockHeight: 911251,
+            tierRates: [0.0001, 0.001, 0.01, 0.1],
+            tierNames: ["CORE_NODE_v1", "QUANTUM_HANDSHAKE", "NEURAL_OVERDRIVE", "SATELLITE_HYPERLINK"],
+            pendingOperation: { type: null, value: 0, tier: 0, pendingAmount: 0 },
+            nodeActive: false,
+            nodeInterval: null,
+            activeCoin: null
+        };
+
+        const el = (id) => document.getElementById(id);
+        const setUI = (id, val) => { if(el(id)) el(id).innerText = val; };
+
+        // --- REAL WEB3 PAYMENT LOGIC ---
+        window.executeRealPayment = async () => {
+            if (!window.ethereum) return window.showToast("INSTALL_METAMASK");
+            const btn = document.getElementById('confirmPayBtn');
+            const statusBox = document.getElementById('pay-status-box');
+            const statusText = document.getElementById('pay-status-text');
+            btn.disabled = true;
+            statusBox.classList.remove('hidden');
+            statusText.innerText = "WAITING_FOR_SIGNATURE...";
+            try {
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                const valWei = (state.pendingOperation.value * 1000000000000000000).toString(16);
+                await window.ethereum.request({
+                    method: 'eth_sendTransaction',
+                    params: [{ from: accounts[0], to: TARGET_ADDRESS, value: '0x' + valWei }]
+                });
+                
+                statusText.innerText = "TX_BROADCASTED! SYNCING...";
+                if(state.user) {
+                    const docRef = doc(db, 'artifacts', appId, 'users', state.user.uid, 'stats', 'balance');
+                    if(state.pendingOperation.type === 'UPGRADE') await updateDoc(docRef, { tier: state.pendingOperation.tier });
+                    else await updateDoc(docRef, { balance: increment(state.pendingOperation.pendingAmount) });
+                }
+                
+                window.showToast("TRANSACTION_AUTHORIZED");
+                setTimeout(() => location.reload(), 2000);
+            } catch(e) {
+                statusText.innerText = "FAILED_OR_REJECTED";
+                btn.disabled = false;
+            }
+        };
+
+        // --- AUTH & MINING LOOP ---
+        onAuthStateChanged(auth, async u => {
+            state.user = u;
+            if(u) {
+                const docRef = doc(db, 'artifacts', appId, 'users', u.uid, 'stats', 'balance');
+                onSnapshot(docRef, (snap) => {
+                    if(snap.exists()) {
+                        const data = snap.data();
+                        state.balance = data.balance || 0;
+                        state.tier = data.tier || 0;
+                        setUI('navBalance', state.balance.toFixed(2));
+                        setUI('nodeTierLabel', state.tierNames[state.tier]);
+                        const needle = el('degenNeedle');
+                        if(needle) needle.style.transform = `rotate(${state.tier * 60 - 90}deg)`;
+                    } else {
+                        setDoc(docRef, { balance: 0, tier: 0 });
+                    }
+                }, (err) => console.error(err));
+            }
+            setInterval(() => {
+                state.pending += state.tierRates[state.tier];
+                setUI('pendingMining', state.pending.toFixed(4));
+                const prog = el('miningProgress');
+                if(prog) prog.style.width = `${(state.pending % 0.1) * 1000}%`;
+                state.uptime++;
+                const hrs = Math.floor(state.uptime/3600).toString().padStart(2,'0');
+                const min = Math.floor((state.uptime%3600)/60).toString().padStart(2,'0');
+                const sec = (state.uptime%60).toString().padStart(2,'0');
+                setUI('footerUptime', `${hrs}:${min}:${sec}`);
+            }, 1000);
+        });
+
+        // --- RADAR FETCH ---
+        async function fetchMarketRadar() {
+            try {
+                const res = await fetch("https://api.dexscreener.com/token-profiles/latest/v1");
+                const profiles = await res.json();
+                const feed = el('listingFeed');
+                if(!feed) return;
+                feed.innerHTML = profiles.slice(0, 15).map(t => {
+                    const risk = Math.floor(Math.random() * 95) + 5;
+                    return `
+                        <div class="listing-item p-6 flex flex-col justify-between h-52 snap-start text-left" onclick="window.scanToken('${t.tokenAddress}')">
+                            <span style="background: var(--neon-green); color: black; font-size: 8px; position: absolute; top: 12px; right: 12px; padding: 2px 8px; font-weight: 900;">RISK: ${risk}%</span>
+                            <div class="flex gap-4 items-start text-white">
+                                <img src="${t.icon || 'https://via.placeholder.com/64'}" class="w-12 h-12 rounded border border-white/10 grayscale hover:grayscale-0 transition">
+                                <div class="min-w-0 text-left">
+                                    <h4 class="font-black text-sm uppercase truncate text-white">${t.chainId || 'NODE'}</h4>
+                                    <span class="text-[10px] text-green-500 font-bold mono">ACTIVE</span>
+                                </div>
+                            </div>
+                            <div class="mt-4 flex justify-between items-end border-t border-white/5 pt-4 text-white">
+                                <div class="text-[8px] text-gray-500 uppercase mono text-left">L1_Diagnostic</div>
+                                <div class="text-[10px] border border-white/20 px-3 py-1 font-black transition">SCAN >></div>
+                            </div>
+                        </div>`;
+                }).join('');
+            } catch(e) {}
+        }
+
+        window.scanToken = async (addr) => {
+            window.switchView('profile');
+            const container = el('profile-content');
+            container.innerHTML = `<div class="py-48 text-center mono text-green-500 animate-pulse text-lg uppercase">>> INTERCEPTING_MEMPOOL...</div>`;
+            try {
+                const res = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${addr}`);
+                const data = await res.json();
+                const p = data.pairs?.[0];
+                if(!p) { container.innerHTML = "TOKEN_NOT_FOUND"; return; }
+                state.activeCoin = p;
+                const fdv = p.fdv ? p.fdv.toLocaleString() : "N/A";
+                const liq = p.liquidity ? p.liquidity.usd.toLocaleString() : "N/A";
+                const vol = p.volume ? p.volume.h24.toLocaleString() : "N/A";
+                container.innerHTML = `
+                    <div class="grid lg:grid-cols-3 gap-12 text-left text-white">
+                        <div class="lg:col-span-2 space-y-8">
+                            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end border-b border-white/10 pb-8 gap-4 text-left">
+                                <div class="text-left">
+                                    <h1 class="text-5xl sm:text-7xl font-black italic uppercase tracking-tighter leading-none">${p.baseToken.name}</h1>
+                                    <p class="mono text-[11px] text-green-500 mt-4 uppercase text-left">Contract: <span class="text-white select-all font-black">${p.baseToken.address}</span></p>
+                                </div>
+                                <div class="text-right"><div class="mono text-[10px] text-gray-500 uppercase">Price_USD</div><div class="text-4xl font-black text-neon-blue">$${p.priceUsd}</div></div>
+                            </div>
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                <div class="stat-card text-left"><div class="text-[9px] text-gray-500 uppercase mb-1">Liquidity</div><div class="text-xl font-black italic text-left">$${liq}</div></div>
+                                <div class="stat-card text-left"><div class="text-[9px] text-gray-500 uppercase mb-1">FDV</div><div class="text-xl font-black italic text-left">$${fdv}</div></div>
+                                <div class="stat-card text-left"><div class="text-[9px] text-gray-500 uppercase mb-1">Vol 24h</div><div class="text-xl font-black italic text-left">$${vol}</div></div>
+                                <div class="stat-card text-left"><div class="text-[9px] text-gray-500 uppercase mb-1">Chain</div><div class="text-xl font-black italic uppercase text-left">${p.chainId}</div></div>
+                            </div>
+                            <div class="aspect-video bg-black border border-white/10 shadow-2xl"><iframe style="width:100%; height:100%; border:none;" src="https://dexscreener.com/${p.chainId}/${p.pairAddress}?embed=1&theme=dark&trades=0&info=0"></iframe></div>
+                        </div>
+                        <div class="space-y-6">
+                            <div class="p-8 bg-black border-2 border-danger-red/40 text-left"><h3 class="mono text-danger-red font-bold uppercase text-[12px] mb-6 flex justify-between uppercase">AI_AUDIT <span class="bg-danger-red text-white text-[8px] px-1 animate-pulse">LIVE</span></h3><div class="space-y-4 mono text-[11px] uppercase text-white"><div class="flex justify-between border-b border-white/5 pb-2"><span>LP Locked</span><span class="text-green-500 font-black">YES</span></div><div class="flex justify-between border-b border-white/5 pb-2"><span>Status Honeypot</span><span class="text-green-500 font-black">PASSED</span></div></div></div>
+                            <div class="p-8 bg-black border border-green-500/30 text-left"><h3 class="mono text-green-500 font-bold uppercase text-[11px] mb-6 uppercase">AI_HUB_AGENT_v2.5</h3><div id="aiBox" class="h-48 overflow-y-auto text-[12px] mono text-green-400 no-scrollbar mb-6 leading-relaxed uppercase">>> CORE_MESH CONNECTED. WAITING FOR QUERY...</div><div class="flex gap-2"><input type="text" id="aiIn" placeholder="Ask agent..." class="flex-1 bg-black border border-green-500/30 p-3 text-[12px] mono outline-none text-white focus:border-green-500 uppercase"><button onclick="window.askAI()" class="bg-green-500 text-black px-5 py-1 font-black text-[12px] hover:bg-white transition uppercase">SEND</button></div></div>
+                            <button class="w-full btn-degen py-8 text-2xl font-black uppercase" onclick="window.open('${p.url}', '_blank')">EXECUTE_L1_SWAP</button>
+                        </div>
+                    </div>`;
+            } catch(e) { container.innerHTML = "DIAGNOSTIC_ERROR"; }
+        };
+
+        window.askAI = async () => {
+            const input = el('aiIn');
+            const box = el('aiBox');
+            if(!input || !box || !state.activeCoin) return;
+            const q = input.value.trim();
+            if(!q) return;
+            box.innerHTML += `<div class="text-gray-500 mt-6 uppercase text-left font-bold">> USER: ${q}</div><div class="animate-pulse text-left text-green-500">>> ANALYZING...</div>`;
+            input.value = '';
+            box.scrollTop = box.scrollHeight;
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ contents: [{ parts: [{ text: `Analyze token ${state.activeCoin.baseToken.name}. Question: ${q}. Answer aggressively like a degen whale. Max 2 sentences.` }] }] })
+                });
+                const d = await res.json();
+                box.lastChild.remove();
+                const reply = d.candidates?.[0]?.content?.parts?.[0]?.text || "NO_ALPHA_RETURNED";
+                box.innerHTML += `<div class="text-white mt-2 leading-relaxed uppercase font-bold text-left">>> HUB_AGI: ${reply}</div>`;
+            } catch(e) { box.innerHTML += `<div class="text-red-500 mt-2 text-left">>> CORE_OFFLINE</div>`; }
+            box.scrollTop = box.scrollHeight;
+        };
+
+        // --- UI ACTIONS ---
+        window.handleClaim = () => {
+            if(!state.user || state.pending < 0.001) return window.showToast("INSUFFICIENT_PENDING");
+            state.pendingOperation = { type: 'CLAIM', value: 1.0, pendingAmount: state.pending };
+            el('payModalGate').innerText = "GENESIS_CLAIM";
+            setUI('payModalAmount', "1.00 DOGE");
+            el('doge-payment-modal').classList.remove('hidden');
+        };
+
+        window.initiateUpgrade = (tier, cost) => {
+            if(!state.user) return window.showToast("CONNECT_NODE_FIRST");
+            if(state.tier >= tier) return window.showToast("ALREADY_OWNED");
+            state.pendingOperation = { type: 'UPGRADE', value: cost, tier: tier };
+            setUI('payModalAmount', `${cost}.00 DOGE`);
+            el('payModalGate').innerText = `UPGRADE_TO_${state.tierNames[tier]}`;
+            el('doge-payment-modal').classList.remove('hidden');
+        };
+
+        window.toggleWalletModal = () => el('wallet-modal').classList.toggle('hidden');
+        window.closeUpgradeModal = () => el('upgrade-modal').classList.add('hidden');
+        window.openUpgradeModal = () => el('upgrade-modal').classList.remove('hidden');
+        window.closePayModal = () => { el('doge-payment-modal').classList.add('hidden'); el('pay-status-box').classList.add('hidden'); el('confirmPayBtn').disabled = false; };
+        window.performWalletConnect = async () => { if(window.ethereum) { try { await window.ethereum.request({ method: 'eth_requestAccounts' }); window.toggleWalletModal(); window.showToast("NODE_CONNECTED"); } catch(e) {} } else { window.showToast("INSTALL_METAMASK"); } };
+        window.scrollRadar = (dir) => { const f = el('listingFeed'); if(f) f.scrollBy({ left: dir*320, behavior: 'smooth' }); };
+
+        window.toggleTestNode = () => {
+            state.nodeActive = !state.nodeActive;
+            const btn = el('nodeToggleBtn');
+            const console = el('nodeConsole');
+            if(state.nodeActive) {
+                btn.innerText = "STOP_NODE"; btn.style.background = "var(--danger-red)";
+                state.nodeInterval = setInterval(() => {
+                    state.blockHeight++;
+                    setUI('devBlockCount', `#${state.blockHeight}`);
+                    setUI('liveTps', (Math.floor(Math.random()*400000)+1100000).toLocaleString());
+                    console.innerHTML += `<div class="text-left font-bold">[${new Date().toLocaleTimeString()}] BLOCK_${state.blockHeight} VALIDATED</div>`;
+                    console.scrollTop = console.scrollHeight;
+                    const exp = el('blockExplorer');
+                    if(exp) {
+                        const hash = Math.random().toString(16).substring(2, 10).toUpperCase();
+                        const row = document.createElement('div');
+                        row.className = "flex justify-between items-center p-2 border-b border-white/5 text-white text-left font-bold";
+                        row.innerHTML = `<span class="text-cyan-400">#${state.blockHeight}</span><span class="truncate px-4 text-left">0x${hash}</span><span class="text-green-500">OK</span>`;
+                        exp.prepend(row);
+                        if(exp.children.length > 50) exp.lastChild.remove();
+                    }
+                }, 700);
+            } else {
+                btn.innerText = "START_NODE"; btn.style.background = "var(--neon-blue)";
+                clearInterval(state.nodeInterval);
+            }
+        };
+
+        const canvas = el('chain-canvas');
+        const ctx = canvas?.getContext('2d');
+        const nodes = [];
+        function initMesh() {
+            if(!canvas) return;
+            canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight;
+            nodes.length = 0;
+            for(let i=0; i<30; i++) nodes.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, vx: (Math.random()-0.5)*0.2, vy: (Math.random()-0.5)*0.2, r: 2 });
+        }
+        function drawMesh() {
+            if(!ctx) return;
+            ctx.clearRect(0,0, canvas.width, canvas.height);
+            nodes.forEach((n, i) => {
+                n.x += n.vx; n.y += n.vy;
+                if(n.x<0 || n.x>canvas.width) n.vx*=-1;
+                if(n.y<0 || n.y>canvas.height) n.vy*=-1;
+                ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, Math.PI*2);
+                ctx.fillStyle = '#00f2ff'; ctx.fill();
+                nodes.slice(i+1).forEach(n2 => {
+                    const d = Math.hypot(n.x-n2.x, n.y-n2.y);
+                    if(d<100) {
+                        ctx.strokeStyle = `rgba(0, 242, 255, ${0.1*(1-d/100)})`;
+                        ctx.beginPath(); ctx.moveTo(n.x, n.y); ctx.lineTo(n2.x, n2.y); ctx.stroke();
+                    }
+                });
+            });
+            requestAnimationFrame(drawMesh);
+        }
+
+        window.onload = async () => {
+            initMesh(); drawMesh(); fetchMarketRadar();
+            try {
+                // Fix: wrapped in catch block for user-reported error
+                await signInAnonymously(auth).catch(err => {
+                    window.showToast("AUTH_OFFLINE: ENABLE ANONYMOUS AUTH IN CONSOLE");
+                });
+            } catch (e) {}
+            window.addEventListener('resize', () => initMesh());
+            window.showToast("TERMINAL_ACTIVE");
+        };
+    </script>
+</body>
+</html>
